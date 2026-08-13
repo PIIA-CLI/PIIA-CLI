@@ -109,7 +109,7 @@ def repo_options(func: Callable[..., Any]) -> Callable[..., Any]:
     func = click.option(
         "-t",
         "--target",
-        required=True,
+        default=None,
         help="Target work: the company's repository. Path, clone URL, or owner/name.",
     )(func)
     func = click.option(
@@ -368,7 +368,7 @@ def cli() -> None:
 @repo_options
 @output_options
 def analyze(
-    target: str,
+    target: str | None,
     priors: tuple[str, ...],
     priors_file: Path | None,
     search_roots: tuple[Path, ...],
@@ -385,6 +385,15 @@ def analyze(
     """
 
     def body(runner: Runner) -> dict[str, Any]:
+        if not target:
+            raise UsageError(
+                "No target work was given.",
+                details=[{"field": "target", "issue": "required"}],
+                remediation=(
+                    "Pass --target <repo>: the company's repository, as a path, a clone URL, "
+                    "or owner/name shorthand."
+                ),
+            )
         prior_list = _collect_priors(priors, priors_file)
         if not prior_list:
             raise UsageError(
@@ -468,7 +477,7 @@ def analyze(
 )
 @output_options
 def generate(
-    target: str,
+    target: str | None,
     priors: tuple[str, ...],
     priors_file: Path | None,
     search_roots: tuple[Path, ...],
@@ -506,6 +515,15 @@ def generate(
     """
 
     def body(runner: Runner) -> dict[str, Any]:
+        if not target:
+            raise UsageError(
+                "No target work was given.",
+                details=[{"field": "target", "issue": "required"}],
+                remediation=(
+                    "Pass --target <repo>: the company's repository, as a path, a clone URL, "
+                    "or owner/name shorthand."
+                ),
+            )
         prior_list = _collect_priors(priors, priors_file)
         if not prior_list:
             raise UsageError(
@@ -702,7 +720,9 @@ def _plan(
 
 # -- render ----------------------------------------------------------------
 @cli.command(short_help="Re-render a saved piia.json into other formats.")
-@click.argument("document", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.argument(
+    "document", required=False, type=click.Path(exists=True, dir_okay=False, path_type=Path)
+)
 @click.option(
     "-f",
     "--format",
@@ -720,7 +740,7 @@ def _plan(
 )
 @output_options
 def render(
-    document: Path,
+    document: Path | None,
     doc_formats: tuple[str, ...],
     output_dir: Path | None,
     **flags: Any,
@@ -732,6 +752,13 @@ def render(
     """
 
     def body(runner: Runner) -> dict[str, Any]:
+        if document is None:
+            raise UsageError(
+                "No document was given.",
+                details=[{"field": "document", "issue": "required"}],
+                remediation="Pass the piia.json written by 'piia generate', e.g. "
+                "'piia render piia-out/<slug>/piia.json -f docx'.",
+            )
         try:
             payload = json.loads(document.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
