@@ -1,0 +1,291 @@
+{#
+  Self-contained HTML rendering: no external CSS, no fonts, no JS, no network.
+  Opens in any browser, prints to A4/Letter, and is what the PDF renderer
+  converts. Renders from the same PiiaDocument as the Markdown template.
+#}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="piia-cli {{ doc.provenance.tool_version }}">
+<meta name="piia:analysis-digest" content="{{ doc.evidence.analysis_digest }}">
+<title>{{ doc.title }}</title>
+<style>
+  :root {
+    --ink: #16181d;
+    --muted: #5c6370;
+    --line: #d8dbe2;
+    --accent: #1f4e79;
+    --warn-bg: #fff8e6;
+    --warn-line: #d9a441;
+    --code-bg: #f4f5f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e6e8ec; --muted: #a2a9b6; --line: #333844; --accent: #7fb3e0;
+      --warn-bg: #2c2517; --warn-line: #b8862f; --code-bg: #23262e;
+    }
+    body { background: #14161a; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; padding: 2.5rem 1.5rem 6rem; max-width: 52rem;
+    font: 16px/1.65 Georgia, "Times New Roman", serif; color: var(--ink);
+  }
+  h1, h2, h3, h4 { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.25; }
+  h1 { font-size: 1.75rem; margin: 0 0 .5rem; }
+  h2 { font-size: 1.3rem; margin: 2.5rem 0 .75rem; padding-bottom: .3rem; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 1.75rem 0 .5rem; }
+  h4 { font-size: .95rem; margin: 1.25rem 0 .35rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  p { margin: .7rem 0; }
+  a { color: var(--accent); }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: .85em; background: var(--code-bg); padding: .1em .35em; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: .85rem; }
+  th, td { text-align: left; vertical-align: top; padding: .45rem .6rem; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; }
+  .meta td:first-child { width: 33%; font-weight: 600; }
+  .notice { background: var(--warn-bg); border-left: 4px solid var(--warn-line); padding: .85rem 1rem; margin: 1.25rem 0; font-size: .9rem; }
+  .note { border-left: 3px solid var(--line); padding: .35rem 0 .35rem .85rem; color: var(--muted); font-size: .9rem; margin: .75rem 0; }
+  .clause { margin: .7rem 0; }
+  .clause > .n { font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin-right: .4rem; }
+  .badge { display: inline-block; padding: .1rem .45rem; border-radius: 999px; font-size: .7rem; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; text-transform: uppercase; letter-spacing: .04em; border: 1px solid currentColor; }
+  .r-high { color: #b3261e; } .r-moderate { color: #a5670a; } .r-low { color: #1f4e79; } .r-none { color: var(--muted); }
+  .sev-high { color: #b3261e; font-weight: 700; } .sev-medium { color: #a5670a; } .sev-low { color: var(--muted); }
+  .sig { display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .sig > div { flex: 1 1 15rem; }
+  .sig .line { border-bottom: 1px solid var(--ink); height: 1.9rem; margin-bottom: .3rem; }
+  .sig .lbl { font-size: .75rem; color: var(--muted); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .exhibit { page-break-before: always; border-top: 3px double var(--line); margin-top: 3rem; padding-top: 1.5rem; }
+  .invention { border: 1px solid var(--line); border-radius: 6px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+  .invention h3 { margin-top: 0; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  @page { size: A4; margin: 20mm 18mm; }
+  @media print {
+    body { max-width: none; padding: 0; font-size: 10.5pt; }
+    .notice, .invention { break-inside: avoid; }
+    h2, h3 { break-after: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<h1>{{ doc.title }}</h1>
+<p class="mono" style="color:var(--muted);font-size:.8rem">
+  {{ doc.company.name }} &middot; {{ doc.signatory.full_name }} &middot; effective {{ doc.effective_date }}
+</p>
+
+<div class="notice"><strong>{{ disclaimer_label }}</strong> {{ doc.disclaimer }}</div>
+
+<table class="meta">
+  <tr><td>Company</td><td>{{ doc.company.name }}{% if doc.company.jurisdiction %} ({{ doc.company.jurisdiction }}){% endif %}</td></tr>
+  <tr><td>Signatory</td><td>{{ doc.signatory.full_name }}{% if doc.signatory.title %}, {{ doc.signatory.title }}{% endif %}</td></tr>
+  <tr><td>Effective date</td><td>{{ doc.effective_date }}</td></tr>
+  <tr><td>Governing law</td><td>{{ doc.governing_law }}</td></tr>
+  <tr><td>Prior Inventions disclosed</td><td>{{ doc.prior_inventions | length }}</td></tr>
+  <tr><td>Analysis digest</td><td><code>{{ doc.evidence.analysis_digest }}</code></td></tr>
+  <tr><td>Generated</td><td>{{ doc.generated_at }} by piia-cli {{ doc.provenance.tool_version }}</td></tr>
+</table>
+
+<h2>Executive Summary</h2>
+<p>{{ doc.executive_summary }}</p>
+
+<h2>Agreement</h2>
+<p>This Proprietary Information and Inventions Agreement (the &ldquo;Agreement&rdquo;) is made as of
+{{ doc.effective_date }} (the &ldquo;Effective Date&rdquo;) between <strong>{{ doc.company.name }}</strong>
+(the &ldquo;Company&rdquo;) and <strong>{{ doc.signatory.full_name }}</strong>
+({% if doc.signatory.title %}{{ doc.signatory.title }}; {% endif %}the &ldquo;Signatory&rdquo;).</p>
+
+<h3>Recitals</h3>
+<ol type="A">
+{% for recital in doc.recitals %}  <li>{{ recital }}</li>
+{% endfor %}</ol>
+<p>The parties agree as follows.</p>
+
+{% for section in doc.sections %}
+<h3>{{ section.number }}. {{ section.heading }}</h3>
+{% if section.drafting_note %}<div class="note"><strong>Drafting note.</strong> {{ section.drafting_note }}</div>{% endif %}
+{% for clause in section.clauses %}
+<p class="clause"><span class="n">{{ clause.number }}</span>{{ clause.text }}</p>
+{% if clause.get('rationale') %}<div class="note">Basis: {{ clause.get('rationale') }}</div>{% endif %}
+{% endfor %}
+{% endfor %}
+
+<h3>Signatures</h3>
+<p>Executed as of the Effective Date.</p>
+<div class="sig">
+  <div>
+    <div class="lbl">{{ doc.company.name }}</div>
+    <div class="line"></div><div class="lbl">Signature</div>
+    <div class="line"></div><div class="lbl">Name</div>
+    <div class="line"></div><div class="lbl">Title</div>
+    <div class="line"></div><div class="lbl">Date</div>
+  </div>
+  <div>
+    <div class="lbl">{{ doc.signatory.full_name }}</div>
+    <div class="line"></div><div class="lbl">Signature</div>
+    <div class="line"></div><div class="lbl">Name: {{ doc.signatory.full_name }}</div>
+    <div class="line"></div><div class="lbl">Title{% if doc.signatory.title %}: {{ doc.signatory.title }}{% endif %}</div>
+    <div class="line"></div><div class="lbl">Date</div>
+  </div>
+</div>
+
+{% set exhibit_a = doc.exhibits | selectattr('id', 'equalto', 'exhibit-a') | first %}
+<section class="exhibit">
+<h2>{{ exhibit_a.label }} &mdash; {{ exhibit_a.heading }}</h2>
+<p>{{ exhibit_a.preamble }}</p>
+{% if not doc.prior_inventions %}
+<p><strong>None.</strong> The Signatory has declared no Prior Inventions.</p>
+{% else %}
+<table>
+  <thead><tr><th>#</th><th>Work</th><th>Repository</th><th>Relatedness</th><th>Incorporation risk</th><th>License</th></tr></thead>
+  <tbody>
+  {% for pi in doc.prior_inventions %}
+    <tr>
+      <td>A.{{ loop.index }}</td>
+      <td>{{ pi.title }}</td>
+      <td><code>{{ pi.repository }}</code></td>
+      <td><span class="badge r-{{ pi.relatedness | default('none') }}">{{ pi.relatedness | default('unknown') }} {{ '%.2f' % (pi.overlap_score | default(0)) }}</span></td>
+      <td>{{ pi.incorporation_risk | default('unknown') }}</td>
+      <td>{{ pi.get('license') or 'not declared' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% for pi in doc.prior_inventions %}
+<div class="invention">
+  <h3>A.{{ loop.index }} {{ pi.title }}</h3>
+  <table class="meta">
+    <tr><td>Repository</td><td>{% if pi.url %}<a href="{{ pi.url }}">{{ pi.repository }}</a>{% else %}<code>{{ pi.repository }}</code>{% endif %}</td></tr>
+    <tr><td>Commit analysed</td><td><code>{{ pi.get('commit') or 'not available' }}</code></td></tr>
+    <tr><td>Created</td><td>{{ pi.get('first_commit_date') or 'not established' }}</td></tr>
+    <tr><td>Last updated</td><td>{{ pi.get('last_commit_date') or 'not established' }}</td></tr>
+    <tr><td>Declared license</td><td>{{ pi.get('license') or 'none detected' }}</td></tr>
+    <tr><td>Asserted owner</td><td>{{ pi.get('ownership') or 'to be confirmed' }}</td></tr>
+    <tr><td>Measured relatedness</td><td><span class="badge r-{{ pi.relatedness | default('none') }}">{{ pi.relatedness | default('unknown') }}</span> score {{ '%.2f' % (pi.overlap_score | default(0)) }}</td></tr>
+    <tr><td>Incorporation risk</td><td>{{ pi.incorporation_risk | default('unknown') }}</td></tr>
+    <tr><td>Drafted by</td><td>{{ 'language model, over deterministic evidence' if pi.source == 'model' else 'deterministic template' }}</td></tr>
+  </table>
+  <h4>Description</h4><p>{{ pi.description }}</p>
+  <h4>Technologies</h4><p>{{ pi.get('technologies') | default([], true) | join(', ') or 'none recorded' }}</p>
+  {% if pi.get('unverified_technologies') %}<div class="note">The model also named {{ pi.get('unverified_technologies') | join(', ') }}, which the deterministic scan did not find. Verify before relying on these.</div>{% endif %}
+  <h4>Relationship to the Company Business</h4><p>{{ pi.relation_to_company_business }}</p>
+  <h4>Reservation of rights</h4><p>{{ pi.carve_out_language }}</p>
+  {% if pi.get('contributors') and pi.get('contributors') | length > 1 %}<h4>Contributors in commit history</h4><p>{{ pi.contributors | join(', ') }}</p>{% endif %}
+  {% if pi.get('notes') %}<div class="note"><strong>To verify:</strong> {{ pi.get('notes') }}</div>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+<p class="lbl">Signatory&rsquo;s initials: ______ &nbsp;&nbsp; Company&rsquo;s initials: ______</p>
+</section>
+
+{% set exhibit_b = doc.exhibits | selectattr('id', 'equalto', 'exhibit-b') | first %}
+<section class="exhibit">
+<h2>{{ exhibit_b.label }} &mdash; {{ exhibit_b.heading }}</h2>
+<p>{{ exhibit_b.preamble }}</p>
+<p><strong>Analysis digest:</strong> <code>{{ doc.evidence.analysis_digest }}</code><br>
+<strong>Analysed at:</strong> {{ doc.evidence.analysis_generated_at }}</p>
+
+<h3>B.1 Method</h3>
+<p>{{ doc.evidence.method }}</p>
+
+<h3>B.2 Target work</h3>
+<table>
+  <thead><tr><th>Repository</th><th>Commit</th><th>First commit</th><th>Last commit</th><th>Commits</th><th>Files</th><th>Language</th><th>License</th></tr></thead>
+  <tbody><tr>
+    <td><code>{{ doc.evidence.target.repository }}</code></td>
+    <td><code>{{ doc.evidence.target.short_commit or '-' }}</code></td>
+    <td>{{ doc.evidence.target.first_commit_date or '-' }}</td>
+    <td>{{ doc.evidence.target.last_commit_date or '-' }}</td>
+    <td>{{ doc.evidence.target.commit_count }}</td>
+    <td>{{ doc.evidence.target.source_files }}</td>
+    <td>{{ doc.evidence.target.primary_language or '-' }}</td>
+    <td>{{ doc.evidence.target.license or '-' }}</td>
+  </tr></tbody>
+</table>
+<h4>Company Business as analysed</h4><p>{{ doc.company_business }}</p>
+<h4>Technical field</h4><p>{{ doc.technical_field }}</p>
+
+<h3>B.3 Prior works analysed</h3>
+<table>
+  <thead><tr><th>Repository</th><th>Resolved from</th><th>Commit</th><th>First</th><th>Last</th><th>Commits</th><th>Contributors</th><th>Files</th><th>Language</th><th>License</th></tr></thead>
+  <tbody>
+  {% for row in doc.evidence.prior_works %}
+    <tr><td><code>{{ row.repository }}</code></td><td>{{ row.resolved_from }}</td><td><code>{{ row.short_commit or '-' }}</code></td>
+    <td>{{ row.first_commit_date or '-' }}</td><td>{{ row.last_commit_date or '-' }}</td><td>{{ row.commit_count }}</td>
+    <td>{{ row.contributor_count }}</td><td>{{ row.source_files }}</td><td>{{ row.primary_language or '-' }}</td><td>{{ row.license or '-' }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3>B.4 Measured relationship to the target work</h3>
+<table>
+  <thead><tr><th>Repository</th><th>Overlap</th><th>Jaccard</th><th>Dependency overlap</th><th>Relatedness</th><th>Predates target</th></tr></thead>
+  <tbody>
+  {% for cmp in doc.evidence.comparisons %}
+    <tr><td><code>{{ cmp.repository }}</code></td><td>{{ '%.2f' % cmp.overlap_score }}</td><td>{{ '%.2f' % cmp.jaccard }}</td>
+    <td>{{ '%.2f' % cmp.dependency_overlap }}</td>
+    <td><span class="badge r-{{ cmp.relatedness }}">{{ cmp.relatedness }}</span></td>
+    <td>{{ 'yes' if cmp.predates_target else ('no' if cmp.predates_target is false else 'not verified') }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% for cmp in doc.evidence.comparisons %}
+<h4><code>{{ cmp.repository }}</code> &mdash; {{ cmp.relatedness }} ({{ '%.2f' % cmp.overlap_score }})</h4>
+<ul>{% for line in cmp.rationale %}<li>{{ line }}</li>{% endfor %}</ul>
+{% endfor %}
+
+<h3>B.5 Technology shared with the prior works</h3>
+<p>{{ doc.evidence.aggregate.shared_technologies | join(', ') or 'none' }}</p>
+<h3>B.6 Technology found only in the target work</h3>
+<p>{{ doc.evidence.aggregate.target_only_technologies | join(', ') or 'none' }}</p>
+{% if doc.evidence.corporate_document %}
+<h3>B.7 Corporate document relied upon</h3>
+<table class="meta">
+  <tr><td>Path</td><td><code>{{ doc.evidence.corporate_document.path }}</code></td></tr>
+  <tr><td>Digest</td><td><code>{{ doc.evidence.corporate_document.digest }}</code></td></tr>
+  <tr><td>Company identified</td><td>{{ doc.evidence.corporate_document.company_name or 'not found' }}</td></tr>
+  <tr><td>Governing law identified</td><td>{{ doc.evidence.corporate_document.governing_law or 'not found' }}</td></tr>
+  <tr><td>Parties identified</td><td>{{ doc.evidence.corporate_document.parties | map(attribute='name') | join('; ') or 'none' }}</td></tr>
+  <tr><td>Sections read</td><td>{{ doc.evidence.corporate_document.relevant_sections | map(attribute='heading') | join('; ') or 'none' }}</td></tr>
+</table>
+{% endif %}
+{% if doc.evidence.analysis_notes %}
+<h3>B.8 Analysis notes</h3>
+<ul>{% for note in doc.evidence.analysis_notes %}<li>{{ note }}</li>{% endfor %}</ul>
+{% endif %}
+</section>
+
+{% set exhibit_c = doc.exhibits | selectattr('id', 'equalto', 'exhibit-c') | first %}
+<section class="exhibit">
+<h2>{{ exhibit_c.label }} &mdash; {{ exhibit_c.heading }}</h2>
+<p>{{ exhibit_c.preamble }}</p>
+{% if doc.review_checklist %}
+<table>
+  <thead><tr><th>Severity</th><th>Item</th><th>Why it matters</th><th>Source</th></tr></thead>
+  <tbody>
+  {% for item in doc.review_checklist %}
+    <tr><td class="sev-{{ item.severity | default('medium') }}">{{ item.severity | upper }}</td><td>{{ item.item }}</td><td>{{ item.why }}</td><td>{{ item.source | default('deterministic') }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>No review items were raised.</p>{% endif %}
+{% if doc.open_source_notes %}
+<h3>C.1 Open-source and license notes</h3>
+<ul>{% for note in doc.open_source_notes %}<li>{{ note }}</li>{% endfor %}</ul>
+{% endif %}
+</section>
+
+<footer>
+  <strong>Provenance.</strong>
+  piia-cli {{ doc.provenance.tool_version }} &middot;
+  generated {{ doc.provenance.generated_at }} &middot;
+  analysis digest <code>{{ doc.provenance.analysis_digest }}</code> &middot;
+  model {{ doc.provenance.model or 'none (deterministic draft)' }}{% if doc.provenance.temperature is not none %} at temperature {{ doc.provenance.temperature }}{% endif %} &middot;
+  repowise {{ 'used' if doc.provenance.repowise_used else 'not used' }}.
+  Model-drafted content: {{ doc.provenance.model_generated_fields | join(', ') or 'none' }}.
+  {% if doc.provenance.degraded %}<br>Degraded steps: {{ doc.provenance.degraded | join(' | ') }}{% endif %}
+  <br>Licensed under AGPL-3.0-or-later. Source: <a href="https://github.com/PIIA-CLI/PIIA-CLI">github.com/PIIA-CLI/PIIA-CLI</a>
+</footer>
+</body>
+</html>

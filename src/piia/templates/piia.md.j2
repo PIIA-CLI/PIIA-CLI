@@ -1,0 +1,251 @@
+{# Markdown rendering of a PiiaDocument. Human-primary output format. #}
+# {{ doc.title }}
+
+> **{{ disclaimer_label }}** {{ doc.disclaimer }}
+
+| | |
+| :--- | :--- |
+| **Company** | {{ doc.company.name }}{% if doc.company.jurisdiction %} ({{ doc.company.jurisdiction }}){% endif %} |
+| **Signatory** | {{ doc.signatory.full_name }}{% if doc.signatory.title %}, {{ doc.signatory.title }}{% endif %} |
+| **Effective date** | {{ doc.effective_date }} |
+| **Governing law** | {{ doc.governing_law }} |
+| **Prior Inventions disclosed** | {{ doc.prior_inventions | length }} |
+| **Analysis digest** | `{{ doc.evidence.analysis_digest }}` |
+| **Generated** | {{ doc.generated_at }} by piia-cli {{ doc.provenance.tool_version }} |
+
+## Executive Summary
+
+{{ doc.executive_summary }}
+
+## Agreement
+
+This Proprietary Information and Inventions Agreement (the "Agreement") is made
+as of {{ doc.effective_date }} (the "Effective Date") between
+**{{ doc.company.name }}** (the "Company") and **{{ doc.signatory.full_name }}**
+({% if doc.signatory.title %}{{ doc.signatory.title }}; {% endif %}"{{ doc.signatory.full_name.split(' ')[0] }}" or the "Signatory").
+
+### Recitals
+
+{% for recital in doc.recitals %}
+{{ loop.index | roman }}. {{ recital }}
+{% endfor %}
+
+The parties agree as follows.
+
+{% for section in doc.sections %}
+### {{ section.number }}. {{ section.heading }}
+{% if section.drafting_note %}
+> **Drafting note.** {{ section.drafting_note }}
+{% endif %}
+{% for clause in section.clauses %}
+**{{ clause.number }}** {{ clause.text }}
+{% if clause.get('rationale') %}
+> *Basis: {{ clause.get('rationale') }}*
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+### Signatures
+
+Executed as of the Effective Date.
+
+| {{ doc.company.name }} | {{ doc.signatory.full_name }} |
+| :--- | :--- |
+| Signature: ______________________ | Signature: ______________________ |
+| Name: ______________________ | Name: {{ doc.signatory.full_name }} |
+| Title: ______________________ | Title: {{ doc.signatory.title or '______________________' }} |
+| Date: ______________________ | Date: ______________________ |
+
+---
+
+{% set exhibit_a = doc.exhibits | selectattr('id', 'equalto', 'exhibit-a') | first %}
+## {{ exhibit_a.label }} -- {{ exhibit_a.heading }}
+
+{{ exhibit_a.preamble }}
+
+{% if not doc.prior_inventions %}
+**None.** The Signatory has declared no Prior Inventions.
+{% else %}
+| # | Work | Repository | Relatedness | Incorporation risk | License |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+{% for pi in doc.prior_inventions %}
+| A.{{ loop.index }} | {{ pi.title }} | `{{ pi.repository }}` | {{ pi.relatedness | default('unknown') }} ({{ '%.2f' % (pi.overlap_score | default(0)) }}) | {{ pi.incorporation_risk | default('unknown') }} | {{ pi.get('license') or 'not declared' }} |
+{% endfor %}
+
+{% for pi in doc.prior_inventions %}
+### A.{{ loop.index }} {{ pi.title }}
+
+| | |
+| :--- | :--- |
+| **Repository** | {% if pi.url %}[{{ pi.repository }}]({{ pi.url }}){% else %}`{{ pi.repository }}`{% endif %} |
+| **Commit analysed** | `{{ pi.get('commit') or 'not available' }}` |
+| **Created** | {{ pi.get('first_commit_date') or 'not established' }} |
+| **Last updated** | {{ pi.get('last_commit_date') or 'not established' }} |
+| **Declared license** | {{ pi.get('license') or 'none detected' }} |
+| **Asserted owner** | {{ pi.get('ownership') or 'to be confirmed' }} |
+| **Measured relatedness** | {{ pi.relatedness | default('unknown') }} (score {{ '%.2f' % (pi.overlap_score | default(0)) }}) |
+| **Incorporation risk** | {{ pi.incorporation_risk | default('unknown') }} |
+| **Drafted by** | {{ 'language model, over deterministic evidence' if pi.source == 'model' else 'deterministic template' }} |
+
+**Description.** {{ pi.description }}
+
+**Technologies.** {{ pi.get('technologies') | default([], true) | join(', ') or 'none recorded' }}
+{% if pi.get('unverified_technologies') %}
+
+> *The model also named {{ pi.get('unverified_technologies') | join(', ') }}, which the deterministic scan did not find. Verify before relying on these.*
+{% endif %}
+
+**Relationship to the Company Business.** {{ pi.relation_to_company_business }}
+
+**Reservation of rights.** {{ pi.carve_out_language }}
+{% if pi.get('contributors') and pi.get('contributors') | length > 1 %}
+
+**Contributors in commit history.** {{ pi.contributors | join(', ') }}
+{% endif %}
+{% if pi.get('notes') %}
+
+> **To verify:** {{ pi.get('notes') }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+Signatory's initials: ______  Company's initials: ______
+
+---
+
+{% set exhibit_b = doc.exhibits | selectattr('id', 'equalto', 'exhibit-b') | first %}
+## {{ exhibit_b.label }} -- {{ exhibit_b.heading }}
+
+{{ exhibit_b.preamble }}
+
+**Analysis digest:** `{{ doc.evidence.analysis_digest }}`
+**Analysed at:** {{ doc.evidence.analysis_generated_at }}
+
+### B.1 Method
+
+{{ doc.evidence.method }}
+
+### B.2 Target work (the Company's repository)
+
+| Repository | Commit | Branch | First commit | Last commit | Commits | Files | Language | License |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `{{ doc.evidence.target.repository }}` | `{{ doc.evidence.target.short_commit or '-' }}` | {{ doc.evidence.target.branch or '-' }} | {{ doc.evidence.target.first_commit_date or '-' }} | {{ doc.evidence.target.last_commit_date or '-' }} | {{ doc.evidence.target.commit_count }} | {{ doc.evidence.target.source_files }} | {{ doc.evidence.target.primary_language or '-' }} | {{ doc.evidence.target.license or '-' }} |
+
+**Company Business as analysed.** {{ doc.company_business }}
+
+**Technical field.** {{ doc.technical_field }}
+
+### B.3 Prior works analysed
+
+| Repository | Resolved from | Commit | First commit | Last commit | Commits | Contributors | Files | Language | License |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+{% for row in doc.evidence.prior_works %}
+| `{{ row.repository }}` | {{ row.resolved_from }} | `{{ row.short_commit or '-' }}` | {{ row.first_commit_date or '-' }} | {{ row.last_commit_date or '-' }} | {{ row.commit_count }} | {{ row.contributor_count }} | {{ row.source_files }} | {{ row.primary_language or '-' }} | {{ row.license or '-' }} |
+{% endfor %}
+
+### B.4 Measured relationship to the target work
+
+| Repository | Overlap | Jaccard | Dependency overlap | Relatedness | Predates target |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+{% for cmp in doc.evidence.comparisons %}
+| `{{ cmp.repository }}` | {{ '%.2f' % cmp.overlap_score }} | {{ '%.2f' % cmp.jaccard }} | {{ '%.2f' % cmp.dependency_overlap }} | {{ cmp.relatedness }} | {{ 'yes' if cmp.predates_target else ('no' if cmp.predates_target is false else 'not verified') }} |
+{% endfor %}
+
+{% for cmp in doc.evidence.comparisons %}
+**`{{ cmp.repository }}`** -- {{ cmp.relatedness }} ({{ '%.2f' % cmp.overlap_score }})
+{% for line in cmp.rationale %}
+- {{ line }}
+{% endfor %}
+{% endfor %}
+
+### B.5 Technology shared between the target work and the prior works
+
+{{ doc.evidence.aggregate.shared_technologies | join(', ') or 'none' }}
+
+### B.6 Technology found only in the target work
+
+{{ doc.evidence.aggregate.target_only_technologies | join(', ') or 'none' }}
+{% if doc.evidence.corporate_document %}
+
+### B.7 Corporate document relied upon
+
+| | |
+| :--- | :--- |
+| **Path** | `{{ doc.evidence.corporate_document.path }}` |
+| **Digest** | `{{ doc.evidence.corporate_document.digest }}` |
+| **Company identified** | {{ doc.evidence.corporate_document.company_name or 'not found' }} |
+| **Governing law identified** | {{ doc.evidence.corporate_document.governing_law or 'not found' }} |
+| **Parties identified** | {{ doc.evidence.corporate_document.parties | map(attribute='name') | join('; ') or 'none' }} |
+| **Sections read** | {{ doc.evidence.corporate_document.relevant_sections | map(attribute='heading') | join('; ') or 'none' }} |
+{% endif %}
+{% if doc.evidence.analysis_notes %}
+
+### B.8 Analysis notes
+
+{% for note in doc.evidence.analysis_notes %}
+- {{ note }}
+{% endfor %}
+{% endif %}
+
+---
+
+{% set exhibit_c = doc.exhibits | selectattr('id', 'equalto', 'exhibit-c') | first %}
+## {{ exhibit_c.label }} -- {{ exhibit_c.heading }}
+
+{{ exhibit_c.preamble }}
+
+{% if doc.review_checklist %}
+| Severity | Item | Why it matters | Source |
+| :--- | :--- | :--- | :--- |
+{% for item in doc.review_checklist %}
+| {{ item.severity | upper }} | {{ item.item }} | {{ item.why }} | {{ item.source | default('deterministic') }} |
+{% endfor %}
+{% else %}
+No review items were raised.
+{% endif %}
+{% if doc.open_source_notes %}
+
+### C.1 Open-source and license notes
+
+{% for note in doc.open_source_notes %}
+- {{ note }}
+{% endfor %}
+{% endif %}
+
+---
+
+## Provenance
+
+| | |
+| :--- | :--- |
+| **Tool** | piia-cli {{ doc.provenance.tool_version }} |
+| **Generated at** | {{ doc.provenance.generated_at }} |
+| **Analysis digest** | `{{ doc.provenance.analysis_digest }}` |
+| **Model** | {{ doc.provenance.model or 'none -- deterministic draft' }} |
+| **Endpoint** | {{ doc.provenance.base_url or 'n/a' }} |
+| **Temperature** | {{ doc.provenance.temperature if doc.provenance.temperature is not none else 'n/a' }} |
+| **repowise used** | {{ 'yes' if doc.provenance.repowise_used else 'no' }} |
+| **Model-drafted content** | {{ doc.provenance.model_generated_fields | join(', ') or 'none' }} |
+| **Deterministic content** | {{ doc.provenance.deterministic_fields | join(', ') or 'none' }} |
+{% if doc.provenance.tool_versions %}
+
+**Tool versions.** {% for key, value in doc.provenance.tool_versions.items() %}{{ key }}={{ value or 'n/a' }}{{ '; ' if not loop.last }}{% endfor %}
+{% endif %}
+{% if doc.provenance.model_calls %}
+
+**Model calls.**
+
+| Task | Model | Latency | Attempts | Tokens |
+| :--- | :--- | :--- | :--- | :--- |
+{% for call in doc.provenance.model_calls %}
+| {{ call.task }} | {{ call.model or '-' }} | {{ call.latency_ms }}ms | {{ call.attempts }} | {{ call.usage.get('total_tokens', call.usage.get('input_tokens', '-')) }} |
+{% endfor %}
+{% endif %}
+{% if doc.provenance.degraded %}
+
+**Degraded steps.**
+
+{% for note in doc.provenance.degraded %}
+- {{ note }}
+{% endfor %}
+{% endif %}

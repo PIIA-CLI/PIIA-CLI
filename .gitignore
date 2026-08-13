@@ -1,0 +1,77 @@
+# ---------------------------------------------------------------------------
+# Secrets and local configuration
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+piia.local.yaml
+
+# ---------------------------------------------------------------------------
+# Local workspace: cloned repositories, inputs and generated documents.
+# Nothing under workspace/ is ever committed -- it holds third-party source
+# code and (potentially privileged) legal drafts.
+# ---------------------------------------------------------------------------
+workspace/
+piia-out/
+.repowise/
+
+# ---------------------------------------------------------------------------
+# Local automated-testing fixtures (not part of the open-source project)
+# ---------------------------------------------------------------------------
+request.md
+hatchd_piia_request.md
+Hatchd Corp — Co-Founders’ Agreement.md
+hatchd*
+Hatchd*
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Test / coverage / type caches
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
