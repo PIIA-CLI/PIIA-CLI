@@ -76,6 +76,10 @@ include = ["src/piia", "tests", "docs", "README.md", "LICENSE", "CHANGELOG.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The repo root must be importable so tests can share helpers via
+# 'from tests.conftest import make_repo'. Without this, pytest only puts the
+# tests/ directory itself on sys.path and that import fails.
+pythonpath = ["."]
 addopts = "-q"
 filterwarnings = ["ignore::DeprecationWarning"]
 
