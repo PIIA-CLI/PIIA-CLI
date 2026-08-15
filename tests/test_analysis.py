@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from piia.analysis.compare import compare, summarize
+from piia.analysis.compare import _classify, compare, summarize
 from piia.analysis.models import RELATEDNESS_HIGH, RELATEDNESS_NONE
 from piia.analysis.native import scan_repository
 from piia.analysis.pipeline import analyze
@@ -176,6 +176,11 @@ class TestScanner:
 
 
 class TestComparison:
+    def test_displayed_boundary_score_and_band_cannot_disagree(self) -> None:
+        published = round(0.5499999999999999, 4)
+        assert published == 0.55
+        assert _classify(published) == RELATEDNESS_HIGH
+
     def test_shared_stack_scores_high_and_explains_itself(self, bundle) -> None:
         overlap = bundle.overlap_for("earlier-vision")
         assert overlap is not None

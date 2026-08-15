@@ -87,13 +87,6 @@ class GitNotFoundError(PiiaError):
         )
 
 
-class RepowiseError(PiiaError):
-    """``repowise`` was requested but failed or is not installed."""
-
-    code = "REPOWISE_FAILED"
-    exit_code = 5
-
-
 class LLMError(PiiaError):
     """The model endpoint failed, timed out, or returned an unusable body."""
 

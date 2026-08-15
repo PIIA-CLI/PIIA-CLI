@@ -43,6 +43,7 @@ DEPENDENCY_WEIGHT = 0.35
 BAND_HIGH = 0.55
 BAND_MODERATE = 0.30
 BAND_LOW = 0.12
+SCORE_PRECISION = 4
 
 RECOMMENDATIONS = {
     RELATEDNESS_HIGH: (
@@ -62,6 +63,16 @@ RECOMMENDATIONS = {
         "Listing it is still the safer default."
     ),
 }
+
+
+def _classify(score: float) -> str:
+    if score >= BAND_HIGH:
+        return RELATEDNESS_HIGH
+    if score >= BAND_MODERATE:
+        return RELATEDNESS_MODERATE
+    if score >= BAND_LOW:
+        return RELATEDNESS_LOW
+    return RELATEDNESS_NONE
 
 
 def _weight(token: str) -> float:
@@ -115,16 +126,12 @@ def compare(target: RepoAnalysis, prior: RepoAnalysis) -> Overlap:
     dep_overlap = len(shared_deps) / len(t_deps) if t_deps else 0.0
 
     score = TECHNOLOGY_WEIGHT * coverage + DEPENDENCY_WEIGHT * dep_overlap
-    score = max(0.0, min(1.0, score))
+    # Classify the same four-decimal score that is published in the evidence.
+    # Without quantization, binary floating-point noise can display as 0.5500
+    # while falling microscopically below the documented high-risk boundary.
+    score = round(max(0.0, min(1.0, score)), SCORE_PRECISION)
 
-    if score >= BAND_HIGH:
-        band = RELATEDNESS_HIGH
-    elif score >= BAND_MODERATE:
-        band = RELATEDNESS_MODERATE
-    elif score >= BAND_LOW:
-        band = RELATEDNESS_LOW
-    else:
-        band = RELATEDNESS_NONE
+    band = _classify(score)
 
     names = display_names(prior, target)
     predates = _predates(prior, target)
@@ -199,9 +206,7 @@ def _rationale(
     else:
         lines.append("No substantive framework, datastore or AI/ML technology in common.")
 
-    lines.append(
-        f"Covers {coverage * 100:.0f}% of the target work's weighted technology surface."
-    )
+    lines.append(f"Covers {coverage * 100:.0f}% of the target work's weighted technology surface.")
     if shared_deps:
         lines.append(
             f"Shares {len(shared_deps)} third-party dependencies with the target work "
@@ -230,7 +235,9 @@ def _rationale(
     return lines
 
 
-def summarize(target: RepoAnalysis, priors: list[RepoAnalysis], overlaps: list[Overlap]) -> dict[str, Any]:
+def summarize(
+    target: RepoAnalysis, priors: list[RepoAnalysis], overlaps: list[Overlap]
+) -> dict[str, Any]:
     """Aggregate view across every prior work."""
     t_tokens = target.technology.technology_set
     prior_union: set[str] = set()

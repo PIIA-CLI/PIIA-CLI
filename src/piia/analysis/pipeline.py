@@ -13,8 +13,8 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from piia.analysis import repowise as repowise_mod
 from piia.analysis.compare import compare, summarize
+from piia.analysis.intelligence import CodeIntelligenceProvider, configured_provider
 from piia.analysis.models import AnalysisBundle, RepoAnalysis
 from piia.analysis.native import scan_repository
 from piia.analysis.repos import (
@@ -61,7 +61,8 @@ def analyze(
     workspace = Path(cfg.workspace_dir)
 
     want_repowise = cfg.use_repowise if use_repowise is None else use_repowise
-    repowise_ready = want_repowise and repowise_mod.available(cfg.repowise_bin)
+    intelligence = configured_provider(cfg.repowise_bin)
+    repowise_ready = want_repowise and intelligence.available()
 
     notes: list[str] = []
     warnings: list[str] = []
@@ -88,6 +89,7 @@ def analyze(
     target_analysis = _analyze_one(
         target_ref,
         settings=settings,
+        intelligence=intelligence,
         repowise_ready=repowise_ready,
         say=say,
         warnings=warnings,
@@ -122,6 +124,7 @@ def analyze(
             _analyze_one(
                 ref,
                 settings=settings,
+                intelligence=intelligence,
                 repowise_ready=repowise_ready,
                 say=say,
                 warnings=warnings,
@@ -137,7 +140,7 @@ def analyze(
         prior_works=prior_analyses,
         overlaps=overlaps,
         aggregate=summarize(target_analysis, prior_analyses, overlaps),
-        tool_versions=tool_versions(cfg.repowise_bin, repowise_ready),
+        tool_versions=tool_versions(intelligence, repowise_ready),
         generated_at=utc_now_iso(),
         notes=notes,
         warnings=warnings,
@@ -148,6 +151,7 @@ def _analyze_one(
     ref,
     *,
     settings: Settings,
+    intelligence: CodeIntelligenceProvider,
     repowise_ready: bool,
     say: Progress,
     warnings: list[str],
@@ -184,9 +188,8 @@ def _analyze_one(
 
     if repowise_ready:
         say(f"  running repowise over {ref.name} (deterministic, keyless)")
-        result = repowise_mod.analyze(
+        result = intelligence.analyze(
             path,
-            binary=cfg.repowise_bin,
             timeout=cfg.repowise_timeout,
             index=True,
         )
@@ -204,11 +207,13 @@ def _analyze_one(
     return analysis
 
 
-def tool_versions(repowise_bin: str = "repowise", repowise_ready: bool = False) -> dict[str, str | None]:
+def tool_versions(
+    intelligence: CodeIntelligenceProvider, repowise_ready: bool = False
+) -> dict[str, str | None]:
     return {
         "piia": __version__,
         "python": sys.version.split()[0],
         "platform": platform.platform(terse=True),
         "git": git_version(),
-        "repowise": repowise_mod.version(repowise_bin) if repowise_ready else None,
+        intelligence.name: intelligence.version() if repowise_ready else None,
     }

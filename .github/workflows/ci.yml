@@ -74,10 +74,12 @@ jobs:
           pip install -e ".[dev]"
       - name: ruff
         run: ruff check src tests
+      - name: published schema drift
+        run: python scripts/export_schemas.py --check
       - name: ruff format check
         run: ruff format --check src tests || true
       - name: mypy
-        run: mypy || true
+        run: mypy
 
   build:
     name: build distribution
@@ -95,6 +97,10 @@ jobs:
         run: |
           python -m zipfile -l dist/*.whl | grep -q "piia/templates/piia.md.j2"
           python -m zipfile -l dist/*.whl | grep -q "piia/templates/piia.html.j2"
+      - name: Build GitHub Action image
+        run: |
+          docker build --tag piia-cli-action:test .
+          docker run --rm --entrypoint piia piia-cli-action:test version --json
       - uses: actions/upload-artifact@v4
         with:
           name: dist

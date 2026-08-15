@@ -11,10 +11,16 @@ import pytest
 from piia.config import LLMSettings, Settings
 from piia.documents.assemble import assemble
 from piia.documents.corporate import parse_corporate_document
-from piia.documents.writer import render_exhibit_a, render_html, render_markdown, write_documents
+from piia.documents.writer import (
+    render_exhibit_a,
+    render_html,
+    render_markdown,
+    render_pdf,
+    write_documents,
+)
 from piia.errors import DocumentError, LLMError, LLMResponseError, UsageError
 from piia.llm.client import ChatClient, Message, extract_json
-from piia.llm.drafting import draft
+from piia.llm.drafting import _technology_key, draft
 from piia.llm.prompts import compact_repo, prior_inventions_messages
 
 
@@ -22,6 +28,10 @@ def _settings(**kwargs: object) -> LLMSettings:
     base = {"base_url": "http://model.local/v1", "model": "test-model", "max_retries": 2}
     base.update(kwargs)
     return LLMSettings(**base)  # type: ignore[arg-type]
+
+
+def test_technology_key_accepts_canonical_parenthetical_display_names() -> None:
+    assert _technology_key("Chroma") == _technology_key("Chroma (vector DB)")
 
 
 class TestExtractJson:
@@ -69,9 +79,7 @@ class TestEndpointShapes:
 
     def test_anthropic_body_lifts_system_out_of_messages(self) -> None:
         client = ChatClient(_settings(api_style="anthropic"))
-        body = client._body(
-            [Message("system", "be brief"), Message("user", "hi")], json_mode=False
-        )
+        body = client._body([Message("system", "be brief"), Message("user", "hi")], json_mode=False)
         assert body["system"] == "be brief"
         assert body["messages"] == [{"role": "user", "content": "hi"}]
         assert body["max_tokens"]
@@ -156,9 +164,7 @@ class TestChatClient:
         client = ChatClient(
             _settings(), transport=openai_reply(["not json at all", '{"prior_inventions": []}'])
         )
-        data, _ = client.complete_json(
-            [Message("user", "hi")], required_keys=("prior_inventions",)
-        )
+        data, _ = client.complete_json([Message("user", "hi")], required_keys=("prior_inventions",))
         assert data == {"prior_inventions": []}
 
     def test_json_repair_gives_up_with_guidance(self, openai_reply) -> None:
@@ -224,9 +230,7 @@ class TestDraftingFallbacks:
         assert by_repo["earlier-vision"]["incorporation_risk"] == "likely"
         assert by_repo["rust-tool"]["incorporation_risk"] == "none"
 
-    def test_model_prose_is_merged_but_facts_stay_deterministic(
-        self, bundle, openai_reply
-    ) -> None:
+    def test_model_prose_is_merged_but_facts_stay_deterministic(self, bundle, openai_reply) -> None:
         replies = [
             json.dumps(
                 {
@@ -302,9 +306,7 @@ class TestDraftingFallbacks:
         assert sources == {"deterministic", "model"}
         assert content.supplemental_clauses[0]["heading"] == "Copyleft"
 
-    def test_endpoint_failure_degrades_to_deterministic_and_records_why(
-        self, bundle
-    ) -> None:
+    def test_endpoint_failure_degrades_to_deterministic_and_records_why(self, bundle) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(500, text="down", request=request)
 
@@ -320,10 +322,20 @@ class TestDraftingFallbacks:
             json.dumps(
                 {
                     "prior_inventions": [
-                        {"repository": "rust-tool", "title": "Rust", "description": "d",
-                         "carve_out_language": "c", "relation_to_company_business": "r"},
-                        {"repository": "earlier-vision", "title": "Vision", "description": "d",
-                         "carve_out_language": "c", "relation_to_company_business": "r"},
+                        {
+                            "repository": "rust-tool",
+                            "title": "Rust",
+                            "description": "d",
+                            "carve_out_language": "c",
+                            "relation_to_company_business": "r",
+                        },
+                        {
+                            "repository": "earlier-vision",
+                            "title": "Vision",
+                            "description": "d",
+                            "carve_out_language": "c",
+                            "relation_to_company_business": "r",
+                        },
                     ]
                 }
             ),
@@ -432,9 +444,7 @@ class TestAssemblyAndRendering:
         }
         assert "No model was involved" in evidence["method"]
 
-    def test_provenance_names_deterministic_when_no_model_ran(
-        self, bundle, tmp_path: Path
-    ) -> None:
+    def test_provenance_names_deterministic_when_no_model_ran(self, bundle, tmp_path: Path) -> None:
         doc = self._document(bundle, tmp_path)
         assert doc.provenance["model"] is None
         assert "prior_inventions" in doc.provenance["deterministic_fields"]
@@ -467,9 +477,7 @@ class TestAssemblyAndRendering:
         assert "## Exhibit B" not in exhibit
         assert "earlier-vision" in exhibit
 
-    def test_write_documents_writes_every_requested_format(
-        self, bundle, tmp_path: Path
-    ) -> None:
+    def test_write_documents_writes_every_requested_format(self, bundle, tmp_path: Path) -> None:
         doc = self._document(bundle, tmp_path)
         out = tmp_path / "out"
         artifacts = write_documents(
@@ -483,20 +491,22 @@ class TestAssemblyAndRendering:
         assert json.loads((out / "piia.json").read_text())["title"] == doc.title
         assert all(a.bytes > 0 for a in artifacts)
 
-    def test_unknown_format_is_rejected_with_the_valid_list(
-        self, bundle, tmp_path: Path
-    ) -> None:
+    def test_unknown_format_is_rejected_with_the_valid_list(self, bundle, tmp_path: Path) -> None:
         doc = self._document(bundle, tmp_path)
         with pytest.raises(DocumentError) as exc:
             write_documents(doc, output_dir=tmp_path / "o", formats=["rtf"])
         assert "md" in (exc.value.remediation or "")
 
-    def test_docx_round_trips_when_python_docx_is_available(
-        self, bundle, tmp_path: Path
-    ) -> None:
+    def test_docx_round_trips_when_python_docx_is_available(self, bundle, tmp_path: Path) -> None:
         pytest.importorskip("docx")
         from piia.documents.docx import render_docx
 
         blob = render_docx(self._document(bundle, tmp_path))
         assert blob[:2] == b"PK"  # a zip container
+        assert len(blob) > 5000
+
+    def test_pdf_round_trips_when_weasyprint_is_available(self, bundle, tmp_path: Path) -> None:
+        pytest.importorskip("weasyprint")
+        blob = render_pdf(self._document(bundle, tmp_path))
+        assert blob.startswith(b"%PDF-")
         assert len(blob) > 5000

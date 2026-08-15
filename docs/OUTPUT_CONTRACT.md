@@ -90,7 +90,6 @@ tool self-correcting in an agent loop.
 | `2` | `CONFIG_INVALID`, `USAGE_INVALID` | Bad configuration or invocation |
 | `3` | `REPOSITORY_UNAVAILABLE` | A repository could not be resolved, cloned or read |
 | `4` | `GIT_NOT_FOUND` | `git` is not on `PATH` |
-| `5` | `REPOWISE_FAILED` | repowise was required and failed |
 | `6` | `LLM_REQUEST_FAILED`, `LLM_RESPONSE_INVALID` | Endpoint failure, or unusable output after repair |
 | `7` | `DOCUMENT_RENDER_FAILED` | Assembly or rendering failed |
 | `8` | `OPTIONAL_DEPENDENCY_MISSING` | A format needs an extra (`[docx]`, `[pdf]`) |

@@ -1,0 +1,51 @@
+name: PIIA Prior-Invention Relatedness Gate
+description: Analyze prior repositories against company code and gate risky overlap without uploading source.
+author: PIIA-CLI contributors
+
+inputs:
+  target:
+    description: Path to the checked-out company repository.
+    required: false
+    default: "."
+  priors:
+    description: Newline- or comma-separated prior repository paths or clone URLs.
+    required: false
+    default: ""
+  priors_file:
+    description: File containing one prior repository path or clone URL per line.
+    required: false
+    default: ""
+  fail_on_relatedness:
+    description: Lowest relatedness band that fails the check (high, moderate, low, or never).
+    required: false
+    default: high
+  use_repowise:
+    description: Enrich scans with the pinned Repowise engine. Slower, but adds graph evidence.
+    required: false
+    default: "false"
+  clone_missing:
+    description: Clone prior repositories that are not already checked out on the runner.
+    required: false
+    default: "true"
+  report_path:
+    description: Path for the complete JSON analysis envelope.
+    required: false
+    default: piia-analysis.json
+
+outputs:
+  analysis_digest:
+    description: Stable digest of the deterministic analysis.
+  highest_relatedness:
+    description: Highest detected band (none, low, moderate, or high).
+  gate_passed:
+    description: Whether the configured relatedness policy passed.
+  report_path:
+    description: Path to the complete JSON analysis envelope.
+
+runs:
+  using: docker
+  image: Dockerfile
+
+branding:
+  icon: shield
+  color: blue

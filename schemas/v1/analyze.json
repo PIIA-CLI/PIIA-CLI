@@ -1,0 +1,881 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PIIA-CLI/PIIA-CLI/main/schemas/v1/analyze.json",
+  "title": "AnalyzeResponse",
+  "description": "Response envelope emitted by 'piia analyze' in JSON mode.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://raw.githubusercontent.com/PIIA-CLI/PIIA-CLI/main/schemas/v1/cli-envelope.json"
+    },
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "command": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error",
+        "partial"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "duration_ms": {
+          "type": "integer"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "tool_version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "duration_ms",
+        "request_id",
+        "tool_version"
+      ]
+    },
+    "data": {
+      "title": "AnalyzeData",
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "description": "Content hash of the analysis; stable across runs at the same commits."
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "slug": {
+              "type": "string"
+            },
+            "repository": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "owner": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "local-path",
+                    "local-discovery",
+                    "clone",
+                    "pending"
+                  ],
+                  "description": "How the checkout was obtained."
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "target",
+                    "prior"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "source",
+                "role"
+              ]
+            },
+            "git": {
+              "type": "object",
+              "properties": {
+                "commit": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "short_commit": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "branch": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "first_commit_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "last_commit_date": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "commit_count": {
+                  "type": "integer"
+                },
+                "contributors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "contributor_count": {
+                  "type": "integer"
+                },
+                "is_git_repo": {
+                  "type": "boolean"
+                },
+                "is_shallow": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "commit",
+                "commit_count",
+                "is_git_repo"
+              ]
+            },
+            "technology": {
+              "type": "object",
+              "properties": {
+                "primary_language": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "languages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "files": {
+                        "type": "integer"
+                      },
+                      "bytes": {
+                        "type": "integer"
+                      },
+                      "share": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "files",
+                      "bytes",
+                      "share"
+                    ]
+                  }
+                },
+                "frameworks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "datastores": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "infrastructure": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "cloud": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "ml_ai": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "protocols": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "frontend": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "testing": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "package_managers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "ci": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dependency_count": {
+                  "type": "integer"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "ecosystem": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "manifest": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "ecosystem"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "primary_language",
+                "languages",
+                "dependencies"
+              ]
+            },
+            "metrics": {
+              "type": "object"
+            },
+            "license": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "repowise": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "repository",
+            "git",
+            "technology",
+            "metrics"
+          ]
+        },
+        "prior_works": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "slug": {
+                "type": "string"
+              },
+              "repository": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "owner": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "path": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "local-path",
+                      "local-discovery",
+                      "clone",
+                      "pending"
+                    ],
+                    "description": "How the checkout was obtained."
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "target",
+                      "prior"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "source",
+                  "role"
+                ]
+              },
+              "git": {
+                "type": "object",
+                "properties": {
+                  "commit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "short_commit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "branch": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "first_commit_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "last_commit_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "commit_count": {
+                    "type": "integer"
+                  },
+                  "contributors": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "contributor_count": {
+                    "type": "integer"
+                  },
+                  "is_git_repo": {
+                    "type": "boolean"
+                  },
+                  "is_shallow": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "commit",
+                  "commit_count",
+                  "is_git_repo"
+                ]
+              },
+              "technology": {
+                "type": "object",
+                "properties": {
+                  "primary_language": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "languages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "files": {
+                          "type": "integer"
+                        },
+                        "bytes": {
+                          "type": "integer"
+                        },
+                        "share": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "files",
+                        "bytes",
+                        "share"
+                      ]
+                    }
+                  },
+                  "frameworks": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "datastores": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "infrastructure": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cloud": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "ml_ai": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "protocols": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "frontend": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "testing": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "package_managers": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "ci": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "dependency_count": {
+                    "type": "integer"
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "ecosystem": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "manifest": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "ecosystem"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "primary_language",
+                  "languages",
+                  "dependencies"
+                ]
+              },
+              "metrics": {
+                "type": "object"
+              },
+              "license": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "repowise": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "repository",
+              "git",
+              "technology",
+              "metrics"
+            ]
+          }
+        },
+        "overlaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "repository": {
+                "type": "string"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "overlap_score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "0.65 * weighted technology coverage + 0.35 * dependency overlap."
+              },
+              "jaccard": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "dependency_overlap": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "relatedness": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "moderate",
+                  "low",
+                  "none"
+                ]
+              },
+              "predates_target": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "shared_technologies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unique_technologies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "target_only_technologies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "shared_dependencies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rationale": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "recommendation": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "repository",
+              "overlap_score",
+              "relatedness",
+              "rationale",
+              "recommendation"
+            ]
+          }
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "prior_work_count": {
+              "type": "integer"
+            },
+            "shared_technologies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "target_only_technologies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "carve_out_candidates": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "relatedness_breakdown": {
+              "type": "object"
+            },
+            "highest_overlap": {
+              "type": "number"
+            },
+            "mean_overlap": {
+              "type": "number"
+            }
+          }
+        },
+        "tool_versions": {
+          "type": "object"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Every resolution decision, including routine ones."
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The subset of notes worth surfacing: clones, skips, degradations."
+        }
+      },
+      "required": [
+        "target",
+        "prior_works",
+        "overlaps",
+        "aggregate",
+        "digest"
+      ]
+    },
+    "error": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Stable machine-readable error code."
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "issue": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "remediation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Concrete next action."
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "remediation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      }
+    },
+    "pagination": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "command",
+    "status",
+    "timestamp",
+    "execution",
+    "data",
+    "error"
+  ],
+  "additionalProperties": false
+}

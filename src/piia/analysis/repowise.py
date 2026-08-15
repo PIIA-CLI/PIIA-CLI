@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -30,6 +31,7 @@ RepowiseResult = dict[str, Any]
 #: config and out of any telemetry, since we are calling it as a library.
 SAFE_ENV = {
     "REPOWISE_SKIP_EDITOR_SETUP": "1",
+    "REPOWISE_NO_SAVE_KEY": "1",
     "DO_NOT_TRACK": "1",
     "NO_COLOR": "1",
 }
@@ -86,13 +88,26 @@ def analyze(
         if not index:
             result["degraded"].append("repository is not indexed and indexing was disabled")
             return result
-        args = [binary, "init", str(repo), "--no-prose", "--yes", "--no-editor-setup"]
+        args = [
+            binary,
+            "init",
+            str(repo),
+            "--no-prose",
+            "--yes",
+            "--no-editor-setup",
+            "--no-save-key",
+            "--no-agents",
+            "--no-codex",
+            "--no-onboarding",
+            "--no-claude-md",
+            "--no-workspace",
+        ]
         if fast:
             args += ["--mode", "fast"]
         proc = _run(args, timeout=timeout, cwd=repo)
         result["commands"].append(" ".join(args))
         if proc is None or proc.returncode != 0:
-            detail = (proc.stderr.strip().splitlines()[-1] if proc and proc.stderr else "timeout")
+            detail = proc.stderr.strip().splitlines()[-1] if proc and proc.stderr else "timeout"
             result["degraded"].append(f"repowise init failed: {detail[:300]}")
             return result
     result["indexed"] = is_indexed(repo)
@@ -100,24 +115,32 @@ def analyze(
         result["degraded"].append("repowise init reported success but wrote no index")
         return result
 
-    health = _json_command([binary, "health", str(repo), "--format", "json"], repo, timeout)
-    if health is None:
+    health = _json_command(
+        [binary, "health", str(repo), "--format", "json", "--no-workspace"], repo, timeout
+    )
+    if not isinstance(health, dict):
         result["degraded"].append("repowise health produced no JSON")
     else:
         result["health"] = _trim_health(health)
         result["commands"].append("repowise health --format json")
 
-    architecture = _export_json(binary, repo, timeout)
+    architecture = _export_architecture(binary, repo, timeout)
     if architecture is None:
         result["degraded"].append("repowise export produced no JSON")
     else:
         result["architecture"] = _trim_architecture(architecture)
-        result["commands"].append("repowise export --format json --full")
+        result["commands"].append("repowise export --format structurizr --standalone --components")
 
-    dead = _json_command([binary, "dead-code", str(repo), "--format", "json"], repo, timeout)
+    dead = _json_command(
+        [binary, "dead-code", str(repo), "--format", "json", "--no-workspace"],
+        repo,
+        timeout,
+    )
     if dead is not None:
         result["dead_code"] = _trim_dead_code(dead)
         result["commands"].append("repowise dead-code --format json")
+    else:
+        result["degraded"].append("repowise dead-code produced no JSON")
 
     return result
 
@@ -143,54 +166,96 @@ def _run(
         return None
 
 
-def _json_command(argv: list[str], cwd: Path, timeout: float) -> dict[str, Any] | None:
+def _json_command(argv: list[str], cwd: Path, timeout: float) -> dict[str, Any] | list[Any] | None:
     proc = _run(argv, timeout=timeout, cwd=cwd)
     if proc is None or proc.returncode != 0:
         return None
-    return _first_json_object(proc.stdout)
+    parsed = _first_json_value(proc.stdout)
+    return parsed if isinstance(parsed, (dict, list)) else None
 
 
-def _export_json(binary: str, repo: Path, timeout: float) -> dict[str, Any] | None:
-    """``repowise export`` writes files; find and read the JSON it produced."""
+def _export_architecture(binary: str, repo: Path, timeout: float) -> dict[str, Any] | None:
+    """Export and trim Repowise's deterministic Structurizr architecture model."""
     out_dir = repo / ".repowise" / "export-piia"
+    output = out_dir / "workspace.dsl"
     argv = [
-        binary, "export", str(repo), "--format", "json", "--full", "--output", str(out_dir)
+        binary,
+        "export",
+        str(repo),
+        "--format",
+        "structurizr",
+        "--standalone",
+        "--components",
+        "--force",
+        "--output",
+        str(output),
     ]
     proc = _run(argv, timeout=timeout, cwd=repo)
-    if proc is None:
+    if proc is None or proc.returncode != 0:
         return None
-    inline = _first_json_object(proc.stdout)
-    if inline:
-        return inline
-    if not out_dir.is_dir():
+    if not output.is_file():
         return None
-    candidates = sorted(
-        (p for p in out_dir.rglob("*.json") if p.is_file()),
-        key=lambda p: p.stat().st_size,
-        reverse=True,
-    )
-    for candidate in candidates:
-        try:
-            data = json.loads(candidate.read_text(encoding="utf-8", errors="replace"))
-        except (json.JSONDecodeError, OSError):
-            continue
-        if isinstance(data, dict):
-            return data
-    return None
+    try:
+        return _parse_structurizr(output.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        return None
 
 
-def _first_json_object(text: str) -> dict[str, Any] | None:
-    """Extract the first balanced top-level JSON object from mixed output."""
+def _parse_structurizr(text: str) -> dict[str, Any]:
+    """Project a Structurizr DSL export into a bounded JSON summary."""
+    workspace = re.search(r'^workspace\s+"([^"]+)"', text, re.MULTILINE)
+    containers = [
+        {"id": match[0], "name": match[1], "summary": match[2], "technology": match[3]}
+        for match in re.findall(
+            r'^\s*([A-Za-z0-9_]+)\s*=\s*container\s+"([^"]+)"\s+"([^"]*)"\s+"([^"]*)"',
+            text,
+            re.MULTILINE,
+        )[:20]
+    ]
+    components = [
+        {"id": match[0], "name": match[1], "summary": match[2]}
+        for match in re.findall(
+            r'^\s*([A-Za-z0-9_]+)\s*=\s*component\s+"([^"]+)"\s+"([^"]*)"',
+            text,
+            re.MULTILINE,
+        )[:80]
+    ]
+    relationships = [
+        {"source": match[0], "target": match[1], "kind": match[2]}
+        for match in re.findall(
+            r'^\s*([A-Za-z0-9_]+)\s*->\s*([A-Za-z0-9_]+)\s+"([^"]*)"',
+            text,
+            re.MULTILINE,
+        )[:160]
+    ]
+    layers: set[str] = set()
+    for value in re.findall(r'"repowise\.layers"\s+"([^"]+)"', text):
+        layers.update(part.strip() for part in value.split(",") if part.strip())
+    return {
+        "format": "structurizr-dsl",
+        "workspace": workspace.group(1) if workspace else None,
+        "layers": sorted(layers),
+        "containers": containers,
+        "components": components,
+        "relationships": relationships,
+    }
+
+
+def _first_json_value(text: str) -> Any | None:
+    """Extract the first balanced top-level JSON object or array from mixed output."""
     if not text:
         return None
     stripped = text.strip()
     try:
         parsed = json.loads(stripped)
-        return parsed if isinstance(parsed, dict) else None
+        return parsed if isinstance(parsed, (dict, list)) else None
     except json.JSONDecodeError:
         pass
-    start = stripped.find("{")
+    starts = [pos for char in ("{", "[") if (pos := stripped.find(char)) != -1]
+    start = min(starts, default=-1)
     while start != -1:
+        opener = stripped[start]
+        closer = "}" if opener == "{" else "]"
         depth = 0
         in_string = False
         escape = False
@@ -207,18 +272,25 @@ def _first_json_object(text: str) -> dict[str, Any] | None:
                 continue
             if in_string:
                 continue
-            if char == "{":
+            if char == opener:
                 depth += 1
-            elif char == "}":
+            elif char == closer:
                 depth -= 1
                 if depth == 0:
                     try:
                         parsed = json.loads(stripped[start : idx + 1])
                     except json.JSONDecodeError:
                         break
-                    return parsed if isinstance(parsed, dict) else None
-        start = stripped.find("{", start + 1)
+                    return parsed if isinstance(parsed, (dict, list)) else None
+        candidates = [pos for char in ("{", "[") if (pos := stripped.find(char, start + 1)) != -1]
+        start = min(candidates, default=-1)
     return None
+
+
+def _first_json_object(text: str) -> dict[str, Any] | None:
+    """Backward-compatible object-only projection used by external callers."""
+    parsed = _first_json_value(text)
+    return parsed if isinstance(parsed, dict) else None
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +313,8 @@ def _trim_health(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _trim_architecture(payload: dict[str, Any]) -> dict[str, Any]:
+    if payload.get("format") == "structurizr-dsl":
+        return payload
     out = _pick(
         payload,
         "repo",
@@ -273,7 +347,28 @@ def _trim_architecture(payload: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _trim_dead_code(payload: dict[str, Any]) -> dict[str, Any]:
+def _trim_dead_code(payload: dict[str, Any] | list[Any]) -> dict[str, Any]:
+    if isinstance(payload, list):
+        findings = payload
+        counts: dict[str, int] = {}
+        for finding in findings:
+            if isinstance(finding, dict):
+                kind = str(finding.get("kind", "unknown"))
+                counts[kind] = counts.get(kind, 0) + 1
+        return {
+            "total": len(findings),
+            "counts": counts,
+            "finding_count": len(findings),
+            "findings": [
+                {
+                    **_pick(f, "file_path", "symbol_name", "kind", "confidence"),
+                    "path": f.get("file_path"),
+                    "symbol": f.get("symbol_name"),
+                }
+                for f in findings[:20]
+                if isinstance(f, dict)
+            ],
+        }
     out = _pick(payload, "summary", "total", "counts")
     findings = payload.get("findings") or payload.get("items") or []
     if isinstance(findings, list):

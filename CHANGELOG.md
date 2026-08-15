@@ -9,6 +9,37 @@ The CLI output contract is versioned separately
 
 ## [Unreleased]
 
+### Added
+
+- Docker-based GitHub Action for local, privacy-preserving prior-work gates,
+  with JSON evidence, step summaries, stable outputs, and configurable failure
+  bands.
+- Published JSON Schema files under `schemas/v1/` plus a CI drift check.
+- PostgreSQL control-plane schema and deployment guidance for a future paid
+  GitHub App, signed attestations, and metered reports.
+- A provider protocol separating optional code-intelligence enrichment from the
+  native scanner and document pipeline.
+- A skip-if-missing PDF regression test; WeasyPrint 69 was exercised against the
+  full Hatchd fixture and produced a valid PDF.
+
+### Changed
+
+- Pin Repowise compatibility to 0.43.0 and the Action image to the tested
+  `ithllc/repowise` fork commit.
+- Repowise runs in single-repository mode with editor, agent, onboarding,
+  workspace, telemetry, and key-persistence side effects disabled.
+- Repowise architecture enrichment now reads its deterministic Structurizr
+  export, and current list-shaped dead-code JSON is normalized correctly.
+- Relatedness scores are quantized to four decimals before banding so a
+  published `0.5500` score cannot be labeled `moderate`.
+
+### Fixed
+
+- Repowise workspace auto-detection no longer indexes unrelated ignored
+  checkouts.
+- Repowise fast mode no longer attempts a JSON wiki export that requires pages
+  it intentionally does not generate.
+
 ## [0.1.0] — 2026-08-13
 
 First release. Output contract `1.0.0`.

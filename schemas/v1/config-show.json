@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PIIA-CLI/PIIA-CLI/main/schemas/v1/config-show.json",
+  "title": "ConfigShowResponse",
+  "description": "Response envelope emitted by 'piia config show' in JSON mode.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://raw.githubusercontent.com/PIIA-CLI/PIIA-CLI/main/schemas/v1/cli-envelope.json"
+    },
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "command": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error",
+        "partial"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "duration_ms": {
+          "type": "integer"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "tool_version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "duration_ms",
+        "request_id",
+        "tool_version"
+      ]
+    },
+    "data": {
+      "title": "ConfigShowData",
+      "type": "object",
+      "properties": {
+        "settings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "value": {},
+              "source": {
+                "type": "string",
+                "enum": [
+                  "cli-flag",
+                  "environment",
+                  "dotenv",
+                  "config-file",
+                  "default",
+                  "default (parent of working directory)",
+                  "dotenv (file)",
+                  "environment (file)",
+                  "config-file (file)"
+                ]
+              },
+              "env_var": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "config_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "env_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "settings"
+      ]
+    },
+    "error": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Stable machine-readable error code."
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "issue": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "remediation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Concrete next action."
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "remediation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      }
+    },
+    "pagination": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "command",
+    "status",
+    "timestamp",
+    "execution",
+    "data",
+    "error"
+  ],
+  "additionalProperties": false
+}
