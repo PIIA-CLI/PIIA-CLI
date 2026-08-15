@@ -411,7 +411,7 @@ def envelope_schema(command: str | None = None) -> dict[str, Any]:
     title = "".join(part.capitalize() for part in (command or "cli").split()) + "Response"
     return {
         "$schema": DRAFT,
-        "$id": f"{SCHEMA_BASE_URL}/{(command or 'envelope').replace(' ', '-')}.json",
+        "$id": f"{SCHEMA_BASE_URL}/{(command or 'cli-envelope').replace(' ', '-')}.json",
         "title": title,
         "description": (
             f"Response envelope emitted by 'piia {command}' in JSON mode."

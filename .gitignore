@@ -14,11 +14,13 @@ piia.local.yaml
 workspace/
 piia-out/
 .repowise/
+.repowise-workspace.yaml
 
 # ---------------------------------------------------------------------------
 # Local automated-testing fixtures (not part of the open-source project)
 # ---------------------------------------------------------------------------
 request.md
+request2.md
 hatchd_piia_request.md
 Hatchd Corp — Co-Founders’ Agreement.md
 hatchd*

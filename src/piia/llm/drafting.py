@@ -15,6 +15,7 @@ sentences a model wrote.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -168,8 +169,11 @@ def draft(
             matched = _match_entries(entries, batch)
             drafted.update(matched)
             content.model_calls.append(
-                {"task": f"prior_inventions[{number}]", "repositories": [p.name for p in batch],
-                 **response.to_dict()}
+                {
+                    "task": f"prior_inventions[{number}]",
+                    "repositories": [p.name for p in batch],
+                    **response.to_dict(),
+                }
             )
             missing = [p.name for p in batch if p.name not in matched]
             if missing:
@@ -185,9 +189,7 @@ def draft(
     if drafted:
         merged: list[dict[str, Any]] = []
         for prior in bundle.prior_works:
-            fallback = _fallback_invention(
-                prior, bundle.overlap_for(prior.name), signatory_name
-            )
+            fallback = _fallback_invention(prior, bundle.overlap_for(prior.name), signatory_name)
             entry = drafted.get(prior.name)
             merged.append(
                 _merge_invention(fallback, entry, _verified_technologies(prior))
@@ -271,9 +273,7 @@ def _text(value: Any, fallback: str) -> str:
     return text or fallback
 
 
-def _match_entries(
-    entries: list[Any], batch: list[RepoAnalysis]
-) -> dict[str, dict[str, Any]]:
+def _match_entries(entries: list[Any], batch: list[RepoAnalysis]) -> dict[str, dict[str, Any]]:
     """Match model entries to repositories by name, then by position.
 
     Small models sometimes rename or reorder; positional fallback keeps their
@@ -302,6 +302,12 @@ def _match_entries(
     return matched
 
 
+def _technology_key(value: Any) -> str:
+    """Normalize harmless display variants without inventing equivalence."""
+    text = re.sub(r"\s*\([^)]*\)\s*$", "", str(value).casefold().strip())
+    return re.sub(r"[^a-z0-9+#.]+", " ", text).strip()
+
+
 def _verified_technologies(analysis: RepoAnalysis) -> dict[str, str]:
     """Every technology the scan actually found, keyed by lowercase name.
 
@@ -312,12 +318,13 @@ def _verified_technologies(analysis: RepoAnalysis) -> dict[str, str]:
     verified: dict[str, str] = {}
     for values in analysis.technology.categorized().values():
         for value in values:
-            verified[value.lower()] = value
+            verified[_technology_key(value)] = value
     for dep in analysis.technology.dependencies:
-        verified.setdefault(dep.name.lower(), dep.name)
+        verified.setdefault(_technology_key(dep.name), dep.name)
     if analysis.technology.primary_language:
         verified.setdefault(
-            analysis.technology.primary_language.lower(), analysis.technology.primary_language
+            _technology_key(analysis.technology.primary_language),
+            analysis.technology.primary_language,
         )
     return verified
 
@@ -349,9 +356,9 @@ def _merge_invention(
     if isinstance(declared, list) and declared:
         # Names the scan found are normalised to its canonical casing; names it
         # did not find are kept, but quarantined so a reader can check them.
-        kept = [verified.get(str(t).lower(), str(t)) for t in declared][:10]
+        kept = [verified.get(_technology_key(t), str(t)) for t in declared][:10]
         merged["technologies"] = kept or fallback["technologies"]
-        unsupported = [str(t) for t in declared if str(t).lower() not in verified]
+        unsupported = [str(t) for t in declared if _technology_key(t) not in verified]
         if unsupported:
             merged["unverified_technologies"] = unsupported[:10]
     if merged["incorporation_risk"] not in {"none", "possible", "likely"}:
@@ -395,8 +402,15 @@ def _humanize(name: str) -> str:
 def _top_tech(analysis: RepoAnalysis, limit: int = 8) -> list[str]:
     tech = analysis.technology
     ordered: list[str] = []
-    for group in (tech.ml_ai, tech.frameworks, tech.datastores, tech.protocols, tech.cloud,
-                  tech.frontend, tech.infrastructure):
+    for group in (
+        tech.ml_ai,
+        tech.frameworks,
+        tech.datastores,
+        tech.protocols,
+        tech.cloud,
+        tech.frontend,
+        tech.infrastructure,
+    ):
         for item in group:
             if item not in ordered:
                 ordered.append(item)
@@ -408,9 +422,7 @@ def _top_tech(analysis: RepoAnalysis, limit: int = 8) -> list[str]:
 def _fallback_company_business(bundle: AnalysisBundle, company_name: str) -> str:
     tech = bundle.target.technology
     stack = ", ".join(_top_tech(bundle.target, 10)) or "software"
-    described = bundle.target.description or (
-        f"the {bundle.target.name} codebase"
-    )
+    described = bundle.target.description or (f"the {bundle.target.name} codebase")
     return (
         f"{company_name} develops and operates software in the field represented by "
         f"{described}. The company's current codebase is implemented primarily in "

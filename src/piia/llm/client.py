@@ -180,7 +180,11 @@ class ChatClient:
                 self._sleep(attempts)
                 continue
 
-            if response.status_code == 400 and allow_json_mode and "response_format" in response.text:
+            if (
+                response.status_code == 400
+                and allow_json_mode
+                and "response_format" in response.text
+            ):
                 # The endpoint rejects structured-output mode; fall back to
                 # prompt-enforced JSON, which every provider supports.
                 allow_json_mode = False
@@ -247,11 +251,11 @@ class ChatClient:
 
         if self.settings.api_style == "anthropic":
             blocks = payload.get("content") or []
-            text = "".join(
+            anthropic_text = "".join(
                 b.get("text", "") for b in blocks if isinstance(b, dict) and b.get("type") == "text"
             )
             return ChatResponse(
-                text=text,
+                text=anthropic_text,
                 model=payload.get("model"),
                 usage=payload.get("usage") or {},
                 finish_reason=payload.get("stop_reason"),
@@ -265,11 +269,9 @@ class ChatClient:
                 remediation="Confirm LLM_MODEL_NAME names a model this endpoint serves.",
             )
         message = choices[0].get("message") or {}
-        text = message.get("content")
+        text: Any = message.get("content")
         if isinstance(text, list):  # some gateways return content parts
-            text = "".join(
-                part.get("text", "") for part in text if isinstance(part, dict)
-            )
+            text = "".join(part.get("text", "") for part in text if isinstance(part, dict))
         return ChatResponse(
             text=text or "",
             model=payload.get("model"),

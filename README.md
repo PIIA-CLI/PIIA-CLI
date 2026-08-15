@@ -42,7 +42,7 @@ you still get a complete document.
 
 ```bash
 pip install piia-cli                  # core
-pip install "piia-cli[all]"           # + DOCX, PDF and repowise enrichment
+pip install "piia-cli[all]"           # + DOCX, PDF and pinned repowise enrichment
 ```
 
 Requires Python 3.11+ and `git` on your `PATH`.
@@ -182,12 +182,32 @@ piia analyze -t . -p ../old --json | jq '.data.overlaps[] | select(.relatedness=
 - **Clean streams.** JSON on `stdout` and nothing else, ever. Progress and
   warnings on `stderr`. No ANSI inside JSON.
 - **Specific exit codes.** `2` usage/config, `3` repository, `4` git missing,
-  `5` repowise, `6` model, `7` document, `8` missing extra, `9` I/O.
+  `6` model, `7` document, `8` missing extra, `9` I/O, and `10` Action policy.
 - **Every error tells you what to run next.** Errors carry a stable `code` and a
   `remediation` string, so a failed invocation is self-correcting.
 
 See [**docs/AGENT_INTEGRATION.md**](docs/AGENT_INTEGRATION.md) and
 [**docs/OUTPUT_CONTRACT.md**](docs/OUTPUT_CONTRACT.md).
+
+## GitHub Action
+
+Run the same deterministic comparison as a pull-request gate without uploading
+source code:
+
+```yaml
+- uses: PIIA-CLI/PIIA-CLI@v1
+  with:
+    target: company
+    priors: |
+      prior-project-a
+      prior-project-b
+    fail_on_relatedness: high
+```
+
+The free Action writes a complete JSON evidence artifact and a GitHub step
+summary. See [**docs/GITHUB_AUTOMATION.md**](docs/GITHUB_AUTOMATION.md) for
+private-repository checkout, policy, permissions, and the separate GitHub App
+boundary for managed commercial features.
 
 ## Optional: repowise enrichment
 
@@ -201,6 +221,11 @@ pip install "piia-cli[repowise]"
 piia generate ... --repowise         # on by default when installed
 piia analyze  ... --no-repowise      # or skip it
 ```
+
+Automated environments use the tested `ithllc/repowise` fork snapshot rather
+than a moving release. The provider contract, exact revision, side-effect
+controls, and update procedure are documented in
+[**docs/CODE_INTELLIGENCE.md**](docs/CODE_INTELLIGENCE.md).
 
 Only **keyless** repowise commands are ever run (`init --no-prose`, `export`,
 `health`, `dead-code`) — a deterministic layer should not spend your tokens. And

@@ -1,0 +1,414 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PIIA-CLI/PIIA-CLI/main/schemas/v1/generate.json",
+  "title": "GenerateResponse",
+  "description": "Response envelope emitted by 'piia generate' in JSON mode.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://raw.githubusercontent.com/PIIA-CLI/PIIA-CLI/main/schemas/v1/cli-envelope.json"
+    },
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "command": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error",
+        "partial"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "duration_ms": {
+          "type": "integer"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "tool_version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "duration_ms",
+        "request_id",
+        "tool_version"
+      ]
+    },
+    "data": {
+      "title": "GenerateData",
+      "type": "object",
+      "properties": {
+        "document": {
+          "type": "object",
+          "properties": {
+            "schema_version": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "company": {
+              "type": "object"
+            },
+            "signatory": {
+              "type": "object"
+            },
+            "effective_date": {
+              "type": "string"
+            },
+            "governing_law": {
+              "type": "string"
+            },
+            "executive_summary": {
+              "type": "string"
+            },
+            "company_business": {
+              "type": "string"
+            },
+            "recitals": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "number": {
+                    "type": "integer"
+                  },
+                  "heading": {
+                    "type": "string"
+                  },
+                  "omitted": {
+                    "type": "boolean"
+                  },
+                  "jurisdiction_sensitive": {
+                    "type": "boolean"
+                  },
+                  "drafting_note": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "clauses": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "number": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "number",
+                        "text"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "number",
+                  "heading",
+                  "clauses"
+                ]
+              }
+            },
+            "prior_inventions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "repository": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "technologies": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "unverified_technologies": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Technologies the model named that the deterministic scan did not find."
+                  },
+                  "relation_to_company_business": {
+                    "type": "string"
+                  },
+                  "carve_out_language": {
+                    "type": "string"
+                  },
+                  "incorporation_risk": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "possible",
+                      "likely"
+                    ]
+                  },
+                  "relatedness": {
+                    "type": "string",
+                    "enum": [
+                      "high",
+                      "moderate",
+                      "low",
+                      "none"
+                    ]
+                  },
+                  "overlap_score": {
+                    "type": "number"
+                  },
+                  "ownership": {
+                    "type": "string"
+                  },
+                  "license": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "commit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "first_commit_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "last_commit_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "contributors": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "model",
+                      "deterministic"
+                    ],
+                    "description": "Whether the prose was model-drafted or template-generated."
+                  }
+                },
+                "required": [
+                  "repository",
+                  "title",
+                  "description",
+                  "carve_out_language",
+                  "source"
+                ]
+              }
+            },
+            "review_checklist": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "open_source_notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "evidence": {
+              "type": "object"
+            },
+            "provenance": {
+              "type": "object"
+            },
+            "disclaimer": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "sections",
+            "prior_inventions",
+            "evidence",
+            "provenance"
+          ]
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "agreement",
+                  "exhibit-a",
+                  "analysis"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "md",
+                  "json",
+                  "html",
+                  "docx",
+                  "pdf"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "path",
+              "bytes",
+              "format"
+            ]
+          }
+        },
+        "provenance": {
+          "type": "object"
+        },
+        "analysis_digest": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "document",
+        "artifacts"
+      ]
+    },
+    "error": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Stable machine-readable error code."
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "issue": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "remediation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Concrete next action."
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "remediation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      }
+    },
+    "pagination": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "command",
+    "status",
+    "timestamp",
+    "execution",
+    "data",
+    "error"
+  ],
+  "additionalProperties": false
+}
