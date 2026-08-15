@@ -31,11 +31,11 @@ jobs:
   relatedness:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: company
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: founder/prior-project
           token: ${{ secrets.PRIOR_REPOS_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
           fail_on_relatedness: high
           use_repowise: false
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: piia-analysis
